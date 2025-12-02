@@ -1,13 +1,18 @@
 /**
- * Simple file-based storage utilities for Reddit Radar
- * Uses JSON files to persist product and keyword settings
+ * Storage utilities for Reddit Radar
+ * Uses Vercel Postgres database when available, falls back to in-memory storage
+ * 
+ * Note: File-based storage has been replaced with database storage for production.
+ * In-memory fallback is used for local development without database setup.
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
-
-// Storage directory path
-const DATA_DIR = path.join(process.cwd(), 'data');
+import {
+  isDatabaseConfigured,
+  getProductSettings as dbGetProduct,
+  saveProductSettings as dbSaveProduct,
+  getKeywordSettings as dbGetKeywords,
+  saveKeywordSettings as dbSaveKeywords,
+} from './db';
 
 // Type definitions for our data structures
 export interface ProductSettings {
@@ -22,61 +27,92 @@ export interface KeywordSettings {
   subreddits: string[];
 }
 
-/**
- * Ensures the data directory exists
- */
-async function ensureDataDir() {
-  try {
-    await fs.access(DATA_DIR);
-  } catch {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  }
-}
+// In-memory storage fallback for local development without database
+let memoryProductSettings: ProductSettings | null = null;
+let memoryKeywordSettings: KeywordSettings | null = null;
+
+// Flag to track if we've shown the warning
+let hasShownWarning = false;
 
 /**
- * Reads data from a JSON file
+ * Show warning once if database is not configured
  */
-async function readJSON<T>(filename: string): Promise<T | null> {
-  try {
-    await ensureDataDir();
-    const filePath = path.join(DATA_DIR, filename);
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    // File doesn't exist or is invalid, return null
-    return null;
+function warnIfNoDatabaseConfigured() {
+  if (!hasShownWarning && !isDatabaseConfigured()) {
+    console.warn(
+      '⚠️  Database not configured. Using in-memory storage (data will not persist).\n' +
+      '   For production, set up Vercel Postgres: https://vercel.com/docs/storage/vercel-postgres'
+    );
+    hasShownWarning = true;
   }
-}
-
-/**
- * Writes data to a JSON file
- */
-async function writeJSON<T>(filename: string, data: T): Promise<void> {
-  await ensureDataDir();
-  const filePath = path.join(DATA_DIR, filename);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 /**
  * Product settings storage
+ * Uses database when configured, otherwise falls back to in-memory storage
  */
 export const productStorage = {
   async get(): Promise<ProductSettings | null> {
-    return readJSON<ProductSettings>('product.json');
+    if (isDatabaseConfigured()) {
+      try {
+        return await dbGetProduct();
+      } catch (error) {
+        console.error('Database error, falling back to in-memory storage:', error);
+        warnIfNoDatabaseConfigured();
+        return memoryProductSettings;
+      }
+    }
+    warnIfNoDatabaseConfigured();
+    return memoryProductSettings;
   },
   async save(data: ProductSettings): Promise<void> {
-    return writeJSON('product.json', data);
+    if (isDatabaseConfigured()) {
+      try {
+        await dbSaveProduct(data);
+        return;
+      } catch (error) {
+        console.error('Database error, falling back to in-memory storage:', error);
+        warnIfNoDatabaseConfigured();
+        memoryProductSettings = data;
+        return;
+      }
+    }
+    warnIfNoDatabaseConfigured();
+    memoryProductSettings = data;
   },
 };
 
 /**
  * Keyword settings storage
+ * Uses database when configured, otherwise falls back to in-memory storage
  */
 export const keywordStorage = {
   async get(): Promise<KeywordSettings | null> {
-    return readJSON<KeywordSettings>('keywords.json');
+    if (isDatabaseConfigured()) {
+      try {
+        return await dbGetKeywords();
+      } catch (error) {
+        console.error('Database error, falling back to in-memory storage:', error);
+        warnIfNoDatabaseConfigured();
+        return memoryKeywordSettings;
+      }
+    }
+    warnIfNoDatabaseConfigured();
+    return memoryKeywordSettings;
   },
   async save(data: KeywordSettings): Promise<void> {
-    return writeJSON('keywords.json', data);
+    if (isDatabaseConfigured()) {
+      try {
+        await dbSaveKeywords(data);
+        return;
+      } catch (error) {
+        console.error('Database error, falling back to in-memory storage:', error);
+        warnIfNoDatabaseConfigured();
+        memoryKeywordSettings = data;
+        return;
+      }
+    }
+    warnIfNoDatabaseConfigured();
+    memoryKeywordSettings = data;
   },
 };

@@ -1,5 +1,54 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Database Setup (Vercel Postgres)
+
+Reddit Radar uses Vercel Postgres to store product and keyword settings. This is **free** on Vercel's Hobby tier.
+
+### Setting up the Database on Vercel
+
+1. **Create a Postgres Database**
+   - Go to your [Vercel Dashboard](https://vercel.com/dashboard)
+   - Navigate to the Storage tab
+   - Click "Create Database"
+   - Select "Postgres"
+   - Choose a name for your database (e.g., "reddit-radar-db")
+   - Select a region close to your deployment
+   - Click "Create"
+
+2. **Connect Database to Your Project**
+   - After creating the database, click "Connect Project"
+   - Select your Reddit Radar project
+   - The required environment variables will be automatically added to your project
+
+3. **Environment Variables**
+   - The following environment variables are automatically configured when you connect the database:
+     - `POSTGRES_URL` - Connection string for the database
+     - `POSTGRES_PRISMA_URL` - Connection pooling URL
+     - `POSTGRES_URL_NON_POOLING` - Direct connection URL
+     - `POSTGRES_USER` - Database username
+     - `POSTGRES_HOST` - Database host
+     - `POSTGRES_PASSWORD` - Database password
+     - `POSTGRES_DATABASE` - Database name
+
+4. **Database Tables**
+   - Tables are automatically created when you first use the app
+   - No manual SQL setup required!
+
+### Local Development Without Database
+
+For local development, you can run the app without setting up a database:
+- The app will use in-memory storage (data won't persist between restarts)
+- You'll see a warning message in the console
+- This is useful for quick testing and development
+
+If you want to use a database locally:
+1. Create a `.env.local` file in the project root
+2. Add your Vercel Postgres connection string:
+   ```
+   POSTGRES_URL="your-connection-string-here"
+   ```
+3. You can find the connection string in your Vercel Dashboard under Storage → your database → .env.local tab
+
 ## Getting Started
 
 First, run the development server:
