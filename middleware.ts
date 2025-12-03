@@ -1,19 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-// Define protected routes that require authentication
-const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)',
-  '/settings(.*)',
-  '/history(.*)',
-  '/analytics(.*)',
-]);
-
-export default clerkMiddleware(async (auth, request) => {
-  // Only protect specific routes, everything else is public
-  if (isProtectedRoute(request)) {
-    await auth.protect();
-  }
-});
+// Use basic Clerk middleware without route protection
+// Routes will handle their own authentication checks
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
