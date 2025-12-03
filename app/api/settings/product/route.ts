@@ -19,8 +19,10 @@ export async function GET() {
       // Return empty product if none exists
       return NextResponse.json({
         name: '',
+        description: '',
         website: '',
         targetAudience: '',
+        features: [],
       });
     }
     
@@ -51,8 +53,10 @@ export async function POST(request: Request) {
     
     const productData: ProductSettings = {
       name: body.name.trim(),
+      description: (body.description || '').trim(),
       website: body.website.trim(),
       targetAudience: body.targetAudience.trim(),
+      features: Array.isArray(body.features) ? body.features.map((f: string) => f.trim()).filter(Boolean) : [],
     };
     
     await productStorage.save(productData);
