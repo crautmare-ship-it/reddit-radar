@@ -139,13 +139,18 @@ export const keywordStorage = {
     // Check if a record exists
     const existing = await sql`SELECT id FROM keyword_settings LIMIT 1`;
     
+    // Convert arrays to PostgreSQL array format
+    const problemKeywordsArray = JSON.stringify(data.problemKeywords).replace('[', '{').replace(']', '}').replace(/"/g, '');
+    const competitorsArray = JSON.stringify(data.competitors).replace('[', '{').replace(']', '}').replace(/"/g, '');
+    const subredditsArray = JSON.stringify(data.subreddits).replace('[', '{').replace(']', '}').replace(/"/g, '');
+    
     if (existing.rows.length > 0) {
       // Update existing record
       await sql`
         UPDATE keyword_settings 
-        SET problem_keywords = ${data.problemKeywords}, 
-            competitors = ${data.competitors}, 
-            subreddits = ${data.subreddits},
+        SET problem_keywords = ${problemKeywordsArray}::text[], 
+            competitors = ${competitorsArray}::text[], 
+            subreddits = ${subredditsArray}::text[],
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ${existing.rows[0].id}
       `;
@@ -153,7 +158,7 @@ export const keywordStorage = {
       // Insert new record
       await sql`
         INSERT INTO keyword_settings (problem_keywords, competitors, subreddits)
-        VALUES (${data.problemKeywords}, ${data.competitors}, ${data.subreddits})
+        VALUES (${problemKeywordsArray}::text[], ${competitorsArray}::text[], ${subredditsArray}::text[])
       `;
     }
   },
