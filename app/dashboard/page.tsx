@@ -33,6 +33,25 @@ function timeAgo(timestamp: number): string {
   return `${Math.floor(seconds / 604800)}w ago`;
 }
 
+// Parse Reddit URL to extract post info
+function parseRedditUrl(url: string): { subreddit: string; postId: string } | null {
+  const patterns = [
+    /reddit\.com\/r\/([^/]+)\/comments\/([^/]+)/,
+    /redd\.it\/([^/]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      if (pattern.source.includes('redd.it')) {
+        return { subreddit: 'unknown', postId: match[1] };
+      }
+      return { subreddit: match[1], postId: match[2] };
+    }
+  }
+  return null;
+}
+
 export default function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +65,13 @@ export default function Dashboard() {
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
   const [replyError, setReplyError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Manual import state
+  const [showImport, setShowImport] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importTitle, setImportTitle] = useState('');
+  const [importBody, setImportBody] = useState('');
+  const [importError, setImportError] = useState('');
 
   useEffect(() => {
     loadLeads();
@@ -84,6 +110,7 @@ export default function Dashboard() {
           postTitle: lead.title,
           postBody: lead.body || '',
           subreddit: lead.subreddit,
+          postUrl: lead.url,
         }),
       });
 
@@ -115,6 +142,48 @@ export default function Dashboard() {
     setReplyError('');
   };
 
+  const handleImportUrl = (url: string) => {
+    setImportUrl(url);
+    setImportError('');
+    
+    const parsed = parseRedditUrl(url);
+    if (url && !parsed) {
+      setImportError('Invalid Reddit URL. Please paste a link to a Reddit post.');
+    }
+  };
+
+  const importLead = () => {
+    if (!importUrl || !importTitle) {
+      setImportError('URL and title are required');
+      return;
+    }
+    
+    const parsed = parseRedditUrl(importUrl);
+    if (!parsed) {
+      setImportError('Invalid Reddit URL');
+      return;
+    }
+    
+    const newLead: Lead = {
+      id: `import_${Date.now()}`,
+      title: importTitle,
+      body: importBody,
+      subreddit: parsed.subreddit,
+      url: importUrl,
+      score: 0,
+      author: 'imported',
+      created: Date.now(),
+      numComments: 0,
+    };
+    
+    setLeads([newLead, ...leads]);
+    setShowImport(false);
+    setImportUrl('');
+    setImportTitle('');
+    setImportBody('');
+    setImportError('');
+  };
+
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="mx-auto max-w-5xl px-6 py-8">
@@ -143,6 +212,16 @@ export default function Dashboard() {
                 {source === 'reddit' ? 'Live Reddit Data' : 'Demo Data'}
               </span>
             )}
+            
+            <button
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Import
+            </button>
             
             <button
               onClick={loadLeads}
@@ -307,6 +386,92 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Import Modal */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="flex items-center justify-between border-b border-zinc-200 p-5 dark:border-zinc-700">
+              <div>
+                <h3 className="text-lg font-semibold text-black dark:text-white">
+                  Import Reddit Post
+                </h3>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Paste a Reddit URL to analyze and generate a reply
+                </p>
+              </div>
+              <button
+                onClick={() => { setShowImport(false); setImportError(''); }}
+                className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Reddit URL
+                </label>
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => handleImportUrl(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                  placeholder="https://www.reddit.com/r/SaaS/comments/..."
+                />
+              </div>
+              
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Post Title
+                </label>
+                <input
+                  type="text"
+                  value={importTitle}
+                  onChange={(e) => setImportTitle(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                  placeholder="Copy the post title here"
+                />
+              </div>
+              
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Post Body (optional)
+                </label>
+                <textarea
+                  value={importBody}
+                  onChange={(e) => setImportBody(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                  rows={4}
+                  placeholder="Paste the post content for better context"
+                />
+              </div>
+              
+              {importError && (
+                <p className="text-sm text-red-600 dark:text-red-400">{importError}</p>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3 border-t border-zinc-200 p-5 dark:border-zinc-700">
+              <button
+                onClick={() => { setShowImport(false); setImportError(''); }}
+                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={importLead}
+                className="rounded-lg bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl"
+              >
+                Import & Analyze
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reply Modal */}
       {selectedLead && (

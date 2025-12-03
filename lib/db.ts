@@ -59,6 +59,67 @@ export async function initializeDatabase() {
       // Column might already exist, ignore errors
     }
 
+    // Create reply_history table for saving generated replies
+    await sql`
+      CREATE TABLE IF NOT EXISTS reply_history (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        post_title TEXT NOT NULL,
+        post_body TEXT DEFAULT '',
+        post_url TEXT NOT NULL,
+        subreddit VARCHAR(255) NOT NULL,
+        generated_reply TEXT NOT NULL,
+        reply_tone VARCHAR(50) DEFAULT 'helpful',
+        tokens_used INTEGER DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_reply_history_user_id ON reply_history(user_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_reply_history_created_at ON reply_history(created_at DESC)`;
+    } catch {
+      // Indexes might already exist
+    }
+
+    // Create usage_stats table for tracking AI usage
+    await sql`
+      CREATE TABLE IF NOT EXISTS usage_stats (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        total_replies INTEGER DEFAULT 0,
+        total_tokens INTEGER DEFAULT 0,
+        month VARCHAR(7) NOT NULL,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, month)
+      )
+    `;
+    
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_usage_stats_user_id ON usage_stats(user_id)`;
+    } catch {
+      // Index might already exist
+    }
+
+    // Create reply_templates table for custom templates
+    await sql`
+      CREATE TABLE IF NOT EXISTS reply_templates (
+        id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        tone VARCHAR(50) NOT NULL,
+        instructions TEXT DEFAULT '',
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_reply_templates_user_id ON reply_templates(user_id)`;
+    } catch {
+      // Index might already exist
+    }
+
     console.log('Database schema initialized successfully');
     return { success: true };
   } catch (error: unknown) {

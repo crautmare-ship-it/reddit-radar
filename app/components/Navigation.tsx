@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { ThemeToggle } from "./ThemeProvider";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -26,7 +27,7 @@ export default function Navigation() {
           <SignedIn>
             <Link
               href="/dashboard"
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive('/dashboard')
                   ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
                   : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
@@ -35,8 +36,28 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link
+              href="/history"
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive('/history')
+                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              History
+            </Link>
+            <Link
+              href="/analytics"
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                isActive('/analytics')
+                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              Analytics
+            </Link>
+            <Link
               href="/settings"
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 isActive('/settings')
                   ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
                   : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
@@ -44,7 +65,8 @@ export default function Navigation() {
             >
               Settings
             </Link>
-            <div className="ml-3 pl-3 border-l border-zinc-200 dark:border-zinc-700">
+            <div className="ml-2 flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-700">
+              <ThemeToggle />
               <UserButton 
                 afterSignOutUrl="/"
                 appearance={{
@@ -56,6 +78,7 @@ export default function Navigation() {
             </div>
           </SignedIn>
           <SignedOut>
+            <ThemeToggle />
             <SignInButton mode="modal">
               <button className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white transition-colors">
                 Sign In

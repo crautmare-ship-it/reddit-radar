@@ -4,12 +4,13 @@
  * POST /api/reply - Generate an AI reply for a Reddit post
  * 
  * Uses the authenticated user's product settings
+ * Saves generated replies to history and tracks usage
  */
 
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { generateReply, isAIConfigured } from '@/lib/ai';
-import { productStorage } from '@/lib/storage';
+import { generateReply } from '@/lib/ai';
+import { productStorage, replyHistoryStorage, usageStatsStorage } from '@/lib/storage';
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    const { postTitle, postBody, subreddit, replyStyle } = body;
+    const { postTitle, postBody, subreddit, replyStyle, postUrl } = body;
     
     if (!postTitle || !subreddit) {
       return NextResponse.json(
@@ -55,6 +56,25 @@ export async function POST(request: Request) {
       productFeatures: product.features || [],
       replyStyle: replyStyle || 'helpful',
     });
+
+    // Save to history (async, don't wait)
+    if (postUrl) {
+      replyHistoryStorage.save(userId, {
+        postTitle,
+        postBody: postBody || '',
+        postUrl,
+        subreddit,
+        generatedReply: result.reply,
+        replyTone: result.tone,
+        tokensUsed: result.tokensUsed,
+      }).catch(err => console.error('Failed to save history:', err));
+    }
+
+    // Track usage (async, don't wait)
+    if (result.tokensUsed > 0) {
+      usageStatsStorage.increment(userId, result.tokensUsed)
+        .catch(err => console.error('Failed to track usage:', err));
+    }
 
     return NextResponse.json(result);
   } catch (error) {

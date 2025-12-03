@@ -20,6 +20,7 @@ export interface GeneratedReply {
   tone: string;
   tips: string[];
   aiConfigured: boolean;
+  tokensUsed: number;
 }
 
 /**
@@ -137,12 +138,14 @@ async function generateWithOpenAI(context: ReplyContext): Promise<GeneratedReply
 
   const data = await response.json();
   const reply = data.choices[0]?.message?.content?.trim() || '';
+  const tokensUsed = data.usage?.total_tokens || 0;
 
   return {
     reply,
     tone: context.replyStyle || 'helpful',
     tips: generateTips(context, reply),
     aiConfigured: true,
+    tokensUsed,
   };
 }
 
@@ -183,12 +186,15 @@ async function generateWithAnthropic(context: ReplyContext): Promise<GeneratedRe
 
   const data = await response.json();
   const reply = data.content[0]?.text?.trim() || '';
+  // Anthropic reports input/output tokens separately
+  const tokensUsed = (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0);
 
   return {
     reply,
     tone: context.replyStyle || 'helpful',
     tips: generateTips(context, reply),
     aiConfigured: true,
+    tokensUsed,
   };
 }
 
@@ -232,6 +238,7 @@ Good luck!`,
       'Engage with other comments too',
     ],
     aiConfigured: false,
+    tokensUsed: 0,
   };
 }
 

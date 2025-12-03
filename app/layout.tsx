@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import Navigation from "./components/Navigation";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 // Force dynamic rendering to avoid static build issues with Clerk
 export const dynamic = 'force-dynamic';
@@ -29,14 +30,16 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <Navigation />
-          <div className="pt-16">
-            {children}
-          </div>
+          <ThemeProvider>
+            <Navigation />
+            <div className="pt-16">
+              {children}
+            </div>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
