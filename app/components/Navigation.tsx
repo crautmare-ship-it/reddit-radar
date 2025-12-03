@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -22,26 +23,50 @@ export default function Navigation() {
         </Link>
         
         <div className="flex items-center gap-1">
-          <Link
-            href="/dashboard"
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              isActive('/dashboard')
-                ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/settings"
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              isActive('/settings')
-                ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            Settings
-          </Link>
+          <SignedIn>
+            <Link
+              href="/dashboard"
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                isActive('/dashboard')
+                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/settings"
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                isActive('/settings')
+                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
+                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              Settings
+            </Link>
+            <div className="ml-3 pl-3 border-l border-zinc-200 dark:border-zinc-700">
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: "h-8 w-8"
+                  }
+                }}
+              />
+            </div>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white transition-colors">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignInButton mode="modal">
+              <button className="rounded-full bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl">
+                Get Started
+              </button>
+            </SignInButton>
+          </SignedOut>
         </div>
       </nav>
     </header>
