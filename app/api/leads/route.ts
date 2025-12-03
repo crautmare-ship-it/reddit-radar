@@ -5,9 +5,11 @@
  * 
  * Uses the Reddit API to search for posts in configured subreddits
  * that match problem keywords or mention competitors.
+ * All data is scoped to the authenticated user.
  */
 
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { keywordStorage, productStorage } from '@/lib/storage';
 import { searchReddit, isRedditConfigured, Lead } from '@/lib/reddit';
 
@@ -63,9 +65,18 @@ function generateMockLeads(
  */
 export async function GET() {
   try {
-    // Check if keywords are configured
-    const keywords = await keywordStorage.get();
-    const product = await productStorage.get();
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // Check if keywords are configured for this user
+    const keywords = await keywordStorage.get(userId);
+    const product = await productStorage.get(userId);
     
     if (!keywords || 
         (keywords.problemKeywords.length === 0 && 
