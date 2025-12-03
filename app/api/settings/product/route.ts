@@ -3,17 +3,29 @@
  * 
  * GET  /api/settings/product - Retrieve saved product information
  * POST /api/settings/product - Save product information
+ * 
+ * All data is scoped to the authenticated user
  */
 
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { productStorage, ProductSettings } from '@/lib/storage';
 
 /**
- * GET handler - Retrieve product settings
+ * GET handler - Retrieve product settings for the current user
  */
 export async function GET() {
   try {
-    const product = await productStorage.get();
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    const product = await productStorage.get(userId);
     
     if (!product) {
       // Return empty product if none exists
@@ -37,10 +49,19 @@ export async function GET() {
 }
 
 /**
- * POST handler - Save product settings
+ * POST handler - Save product settings for the current user
  */
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const body = await request.json();
     
     // Validate required fields
@@ -59,7 +80,7 @@ export async function POST(request: Request) {
       features: Array.isArray(body.features) ? body.features.map((f: string) => f.trim()).filter(Boolean) : [],
     };
     
-    await productStorage.save(productData);
+    await productStorage.save(userId, productData);
     
     return NextResponse.json({
       success: true,

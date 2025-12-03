@@ -2,14 +2,26 @@
  * API Route: Generate Reply
  * 
  * POST /api/reply - Generate an AI reply for a Reddit post
+ * 
+ * Uses the authenticated user's product settings
  */
 
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { generateReply, isAIConfigured } from '@/lib/ai';
 import { productStorage } from '@/lib/storage';
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const body = await request.json();
     
     const { postTitle, postBody, subreddit, replyStyle } = body;
@@ -21,8 +33,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get product settings
-    const product = await productStorage.get();
+    // Get product settings for the current user
+    const product = await productStorage.get(userId);
     
     if (!product) {
       return NextResponse.json(

@@ -1,6 +1,7 @@
 /**
  * Database storage utilities for Redd Radar
  * Uses Vercel Postgres to persist product and keyword settings
+ * All data is scoped to individual users via user_id
  */
 
 import { sql, isDatabaseConfigured, initializeDatabase } from './db';
@@ -40,15 +41,17 @@ async function ensureDatabase() {
 
 /**
  * Product settings storage using Vercel Postgres
+ * All operations are scoped to a specific user_id
  */
 export const productStorage = {
-  async get(): Promise<ProductSettings | null> {
+  async get(userId: string): Promise<ProductSettings | null> {
     try {
       await ensureDatabase();
       
       const result = await sql`
         SELECT name, description, website, target_audience, features 
         FROM product_settings 
+        WHERE user_id = ${userId}
         ORDER BY id DESC 
         LIMIT 1
       `;
@@ -71,11 +74,11 @@ export const productStorage = {
     }
   },
   
-  async save(data: ProductSettings): Promise<void> {
+  async save(userId: string, data: ProductSettings): Promise<void> {
     await ensureDatabase();
     
-    // Check if a record exists
-    const existing = await sql`SELECT id FROM product_settings LIMIT 1`;
+    // Check if a record exists for this user
+    const existing = await sql`SELECT id FROM product_settings WHERE user_id = ${userId} LIMIT 1`;
     
     // Convert features array to PostgreSQL array format
     const featuresArray = JSON.stringify(data.features).replace('[', '{').replace(']', '}').replace(/"/g, '');
@@ -90,13 +93,13 @@ export const productStorage = {
             target_audience = ${data.targetAudience},
             features = ${featuresArray}::text[],
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${existing.rows[0].id}
+        WHERE user_id = ${userId}
       `;
     } else {
-      // Insert new record
+      // Insert new record for this user
       await sql`
-        INSERT INTO product_settings (name, description, website, target_audience, features)
-        VALUES (${data.name}, ${data.description}, ${data.website}, ${data.targetAudience}, ${featuresArray}::text[])
+        INSERT INTO product_settings (user_id, name, description, website, target_audience, features)
+        VALUES (${userId}, ${data.name}, ${data.description}, ${data.website}, ${data.targetAudience}, ${featuresArray}::text[])
       `;
     }
   },
@@ -104,15 +107,17 @@ export const productStorage = {
 
 /**
  * Keyword settings storage using Vercel Postgres
+ * All operations are scoped to a specific user_id
  */
 export const keywordStorage = {
-  async get(): Promise<KeywordSettings | null> {
+  async get(userId: string): Promise<KeywordSettings | null> {
     try {
       await ensureDatabase();
       
       const result = await sql`
         SELECT problem_keywords, competitors, subreddits 
         FROM keyword_settings 
+        WHERE user_id = ${userId}
         ORDER BY id DESC 
         LIMIT 1
       `;
@@ -133,11 +138,11 @@ export const keywordStorage = {
     }
   },
   
-  async save(data: KeywordSettings): Promise<void> {
+  async save(userId: string, data: KeywordSettings): Promise<void> {
     await ensureDatabase();
     
-    // Check if a record exists
-    const existing = await sql`SELECT id FROM keyword_settings LIMIT 1`;
+    // Check if a record exists for this user
+    const existing = await sql`SELECT id FROM keyword_settings WHERE user_id = ${userId} LIMIT 1`;
     
     // Convert arrays to PostgreSQL array format
     const problemKeywordsArray = JSON.stringify(data.problemKeywords).replace('[', '{').replace(']', '}').replace(/"/g, '');
@@ -152,13 +157,13 @@ export const keywordStorage = {
             competitors = ${competitorsArray}::text[], 
             subreddits = ${subredditsArray}::text[],
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${existing.rows[0].id}
+        WHERE user_id = ${userId}
       `;
     } else {
-      // Insert new record
+      // Insert new record for this user
       await sql`
-        INSERT INTO keyword_settings (problem_keywords, competitors, subreddits)
-        VALUES (${problemKeywordsArray}::text[], ${competitorsArray}::text[], ${subredditsArray}::text[])
+        INSERT INTO keyword_settings (user_id, problem_keywords, competitors, subreddits)
+        VALUES (${userId}, ${problemKeywordsArray}::text[], ${competitorsArray}::text[], ${subredditsArray}::text[])
       `;
     }
   },

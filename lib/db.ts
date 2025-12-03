@@ -11,10 +11,11 @@ import { sql } from '@vercel/postgres';
  */
 export async function initializeDatabase() {
   try {
-    // Create product_settings table
+    // Create product_settings table with user_id for multi-user support
     await sql`
       CREATE TABLE IF NOT EXISTS product_settings (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
         description TEXT DEFAULT '',
         website VARCHAR(500) NOT NULL,
@@ -29,14 +30,18 @@ export async function initializeDatabase() {
     try {
       await sql`ALTER TABLE product_settings ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''`;
       await sql`ALTER TABLE product_settings ADD COLUMN IF NOT EXISTS features TEXT[] DEFAULT '{}'`;
+      await sql`ALTER TABLE product_settings ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)`;
+      // Create index on user_id for faster lookups
+      await sql`CREATE INDEX IF NOT EXISTS idx_product_settings_user_id ON product_settings(user_id)`;
     } catch {
       // Columns might already exist, ignore errors
     }
 
-    // Create keyword_settings table
+    // Create keyword_settings table with user_id for multi-user support
     await sql`
       CREATE TABLE IF NOT EXISTS keyword_settings (
         id SERIAL PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
         problem_keywords TEXT[] DEFAULT '{}',
         competitors TEXT[] DEFAULT '{}',
         subreddits TEXT[] DEFAULT '{}',
@@ -44,6 +49,15 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // Add user_id column to keyword_settings if it doesn't exist
+    try {
+      await sql`ALTER TABLE keyword_settings ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)`;
+      // Create index on user_id for faster lookups
+      await sql`CREATE INDEX IF NOT EXISTS idx_keyword_settings_user_id ON keyword_settings(user_id)`;
+    } catch {
+      // Column might already exist, ignore errors
+    }
 
     console.log('Database schema initialized successfully');
     return { success: true };

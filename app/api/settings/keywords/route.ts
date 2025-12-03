@@ -3,17 +3,29 @@
  * 
  * GET  /api/settings/keywords - Retrieve saved keywords and subreddits
  * POST /api/settings/keywords - Save keywords and subreddits
+ * 
+ * All data is scoped to the authenticated user
  */
 
 import { NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { keywordStorage, KeywordSettings } from '@/lib/storage';
 
 /**
- * GET handler - Retrieve keyword settings
+ * GET handler - Retrieve keyword settings for the current user
  */
 export async function GET() {
   try {
-    const keywords = await keywordStorage.get();
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    const keywords = await keywordStorage.get(userId);
     
     if (!keywords) {
       // Return empty keyword settings if none exist
@@ -35,10 +47,19 @@ export async function GET() {
 }
 
 /**
- * POST handler - Save keyword settings
+ * POST handler - Save keyword settings for the current user
  */
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const body = await request.json();
     
     // Helper function to parse textarea input (one item per line)
@@ -56,7 +77,7 @@ export async function POST(request: Request) {
       subreddits: parseTextarea(body.subreddits || ''),
     };
     
-    await keywordStorage.save(keywordData);
+    await keywordStorage.save(userId, keywordData);
     
     return NextResponse.json({
       success: true,
