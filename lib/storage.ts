@@ -77,6 +77,9 @@ export const productStorage = {
     // Check if a record exists
     const existing = await sql`SELECT id FROM product_settings LIMIT 1`;
     
+    // Convert features array to PostgreSQL array format
+    const featuresArray = JSON.stringify(data.features).replace('[', '{').replace(']', '}').replace(/"/g, '');
+    
     if (existing.rows.length > 0) {
       // Update existing record
       await sql`
@@ -85,7 +88,7 @@ export const productStorage = {
             description = ${data.description},
             website = ${data.website}, 
             target_audience = ${data.targetAudience},
-            features = ${data.features},
+            features = ${featuresArray}::text[],
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ${existing.rows[0].id}
       `;
@@ -93,7 +96,7 @@ export const productStorage = {
       // Insert new record
       await sql`
         INSERT INTO product_settings (name, description, website, target_audience, features)
-        VALUES (${data.name}, ${data.description}, ${data.website}, ${data.targetAudience}, ${data.features})
+        VALUES (${data.name}, ${data.description}, ${data.website}, ${data.targetAudience}, ${featuresArray}::text[])
       `;
     }
   },
