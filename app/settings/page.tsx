@@ -1,15 +1,17 @@
 'use client';
 
-import Link from "next/link";
 import { useState, useEffect, FormEvent } from "react";
 
 export default function Settings() {
   // Product form state
   const [productName, setProductName] = useState('');
+  const [productDescription, setProductDescription] = useState('');
   const [productWebsite, setProductWebsite] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
+  const [productFeatures, setProductFeatures] = useState('');
   const [productLoading, setProductLoading] = useState(false);
   const [productMessage, setProductMessage] = useState('');
+  const [productInitialLoading, setProductInitialLoading] = useState(true);
 
   // Keywords form state
   const [problemKeywords, setProblemKeywords] = useState('');
@@ -17,27 +19,29 @@ export default function Settings() {
   const [subreddits, setSubreddits] = useState('');
   const [keywordsLoading, setKeywordsLoading] = useState(false);
   const [keywordsMessage, setKeywordsMessage] = useState('');
+  const [keywordsInitialLoading, setKeywordsInitialLoading] = useState(true);
 
-  // Load existing settings on mount
   useEffect(() => {
     loadProductSettings();
     loadKeywordSettings();
   }, []);
 
-  // Load product settings from API
   const loadProductSettings = async () => {
     try {
       const response = await fetch('/api/settings/product');
       const data = await response.json();
       if (data.name) setProductName(data.name);
+      if (data.description) setProductDescription(data.description);
       if (data.website) setProductWebsite(data.website);
       if (data.targetAudience) setTargetAudience(data.targetAudience);
+      if (data.features) setProductFeatures(data.features.join('\n'));
     } catch {
       console.error('Failed to load product settings');
+    } finally {
+      setProductInitialLoading(false);
     }
   };
 
-  // Load keyword settings from API
   const loadKeywordSettings = async () => {
     try {
       const response = await fetch('/api/settings/keywords');
@@ -47,10 +51,11 @@ export default function Settings() {
       if (data.subreddits) setSubreddits(data.subreddits.join('\n'));
     } catch {
       console.error('Failed to load keyword settings');
+    } finally {
+      setKeywordsInitialLoading(false);
     }
   };
 
-  // Save product settings
   const handleProductSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setProductLoading(true);
@@ -62,27 +67,28 @@ export default function Settings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: productName,
+          description: productDescription,
           website: productWebsite,
           targetAudience: targetAudience,
+          features: productFeatures.split('\n').map(f => f.trim()).filter(Boolean),
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setProductMessage('✓ Product settings saved successfully!');
+        setProductMessage('success');
         setTimeout(() => setProductMessage(''), 3000);
       } else {
-        setProductMessage(`Error: ${data.error || 'Failed to save'}`);
+        setProductMessage(`error:${data.error || 'Failed to save'}`);
       }
     } catch {
-      setProductMessage('Error: Failed to save product settings');
+      setProductMessage('error:Failed to save product settings');
     } finally {
       setProductLoading(false);
     }
   };
 
-  // Save keyword settings
   const handleKeywordsSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setKeywordsLoading(true);
@@ -102,162 +108,313 @@ export default function Settings() {
       const data = await response.json();
 
       if (response.ok) {
-        setKeywordsMessage('✓ Keywords saved successfully!');
+        setKeywordsMessage('success');
         setTimeout(() => setKeywordsMessage(''), 3000);
       } else {
-        setKeywordsMessage(`Error: ${data.error || 'Failed to save'}`);
+        setKeywordsMessage(`error:${data.error || 'Failed to save'}`);
       }
     } catch {
-      setKeywordsMessage('Error: Failed to save keywords');
+      setKeywordsMessage('error:Failed to save keywords');
     } finally {
       setKeywordsLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="max-w-3xl w-full px-6 py-16 space-y-8">
-        <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
-          Settings
-        </h1>
-
-        <div className="mt-1 mb-6 flex gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center rounded-full bg-zinc-200 text-black px-4 py-2 text-sm font-medium hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-50"
-          >
-            Home
-          </Link>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center justify-center rounded-full bg-black text-white px-4 py-2 text-sm font-medium hover:bg-[#383838] dark:bg-white dark:text-black"
-          >
-            Dashboard
-          </Link>
+    <main className="min-h-screen bg-zinc-50 dark:bg-black">
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-black dark:text-white sm:text-3xl">
+            Settings
+          </h1>
+          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+            Configure your product and keywords to find relevant Reddit leads.
+          </p>
         </div>
 
-        {/* Product section */}
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-            Product
-          </h2>
-          <p className="text-zinc-700 dark:text-zinc-400">
-            Tell us about your SaaS. This will be used when generating replies.
-          </p>
-          <form onSubmit={handleProductSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Product name
-              </label>
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                placeholder="Example: ChurnWatch"
-                required
-              />
+        <div className="space-y-8">
+          {/* Product Section */}
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-6 flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30">
+                <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-black dark:text-white">
+                  Your Product
+                </h2>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Tell us about your SaaS so we can find the right conversations.
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Product website
-              </label>
-              <input
-                type="text"
-                value={productWebsite}
-                onChange={(e) => setProductWebsite(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                placeholder="https://your-saas.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Who is it for?
-              </label>
-              <input
-                type="text"
-                value={targetAudience}
-                onChange={(e) => setTargetAudience(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                placeholder="Example: small B2B SaaS founders, HR managers..."
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={productLoading}
-              className="inline-flex items-center justify-center rounded-full bg-black text-white px-4 py-2 text-sm font-medium hover:bg-[#383838] dark:bg-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {productLoading ? 'Saving...' : 'Save Product'}
-            </button>
-            {productMessage && (
-              <p className={`text-sm ${productMessage.startsWith('✓') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {productMessage}
-              </p>
+            
+            {productInitialLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="mb-2 h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                    <div className="h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <form onSubmit={handleProductSubmit} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Product name
+                  </label>
+                  <input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    placeholder="e.g., ChurnWatch, MailPilot, DataSync"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Product description
+                  </label>
+                  <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-500">
+                    What does your product do? Be specific - this helps AI generate accurate replies.
+                  </p>
+                  <textarea
+                    value={productDescription}
+                    onChange={(e) => setProductDescription(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    rows={3}
+                    placeholder="e.g., An analytics platform that helps SaaS companies predict and prevent customer churn using AI-powered insights and automated email campaigns."
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Website URL
+                  </label>
+                  <input
+                    type="url"
+                    value={productWebsite}
+                    onChange={(e) => setProductWebsite(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    placeholder="https://your-product.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Target audience
+                  </label>
+                  <input
+                    type="text"
+                    value={targetAudience}
+                    onChange={(e) => setTargetAudience(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    placeholder="e.g., SaaS founders, marketing teams, freelancers"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Key features (one per line)
+                  </label>
+                  <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-500">
+                    List your main features - AI will ONLY mention these, preventing hallucination.
+                  </p>
+                  <textarea
+                    value={productFeatures}
+                    onChange={(e) => setProductFeatures(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    rows={4}
+                    placeholder={"Churn prediction with 95% accuracy\nAutomated win-back email campaigns\nReal-time customer health scores\nSlack & HubSpot integrations"}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={productLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {productLoading ? (
+                      <>
+                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Product'
+                    )}
+                  </button>
+                  
+                  {productMessage === 'success' && (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Saved successfully
+                    </span>
+                  )}
+                  
+                  {productMessage.startsWith('error:') && (
+                    <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                      {productMessage.replace('error:', '')}
+                    </span>
+                  )}
+                </div>
+              </form>
             )}
-          </form>
-        </section>
+          </section>
 
-        {/* Keywords section */}
-        <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-black dark:text-zinc-50">
-            Keywords & Subreddits
-          </h2>
-          <p className="text-zinc-700 dark:text-zinc-400">
-            These will tell the system what to look for on Reddit.
-          </p>
-          <form onSubmit={handleKeywordsSubmit} className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Problem keywords (one per line)
-              </label>
-              <textarea
-                value={problemKeywords}
-                onChange={(e) => setProblemKeywords(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                rows={3}
-                placeholder={"how to reduce churn\nbest crm for freelancers\nalternative to X"}
-              />
+          {/* Keywords Section */}
+          <section className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-6 flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/30">
+                <svg className="h-5 w-5 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-black dark:text-white">
+                  Keywords & Subreddits
+                </h2>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Define what to search for on Reddit. One item per line.
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Competitor / tool names (one per line)
-              </label>
-              <textarea
-                value={competitors}
-                onChange={(e) => setCompetitors(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                rows={2}
-                placeholder={"HubSpot\nIntercom"}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                Subreddits to monitor (one per line)
-              </label>
-              <textarea
-                value={subreddits}
-                onChange={(e) => setSubreddits(e.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                rows={2}
-                placeholder={"SaaS\nEntrepreneur\nindiehackers"}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={keywordsLoading}
-              className="inline-flex items-center justify-center rounded-full bg-black text-white px-4 py-2 text-sm font-medium hover:bg-[#383838] dark:bg-white dark:text-black disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {keywordsLoading ? 'Saving...' : 'Save Keywords'}
-            </button>
-            {keywordsMessage && (
-              <p className={`text-sm ${keywordsMessage.startsWith('✓') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {keywordsMessage}
-              </p>
+
+            {keywordsInitialLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="mb-2 h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-700"></div>
+                    <div className="h-24 rounded-lg bg-zinc-100 dark:bg-zinc-800"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <form onSubmit={handleKeywordsSubmit} className="space-y-5">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Problem keywords
+                  </label>
+                  <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-500">
+                    What problems does your product solve? Enter phrases people might search for.
+                  </p>
+                  <textarea
+                    value={problemKeywords}
+                    onChange={(e) => setProblemKeywords(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    rows={4}
+                    placeholder={"how to reduce churn\nbest tool for customer feedback\nanalytics dashboard recommendation"}
+                  />
+                </div>
+                
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Competitor names
+                  </label>
+                  <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-500">
+                    Products people might compare you to or ask for alternatives.
+                  </p>
+                  <textarea
+                    value={competitors}
+                    onChange={(e) => setCompetitors(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    rows={3}
+                    placeholder={"HubSpot\nIntercom\nMixpanel"}
+                  />
+                </div>
+                
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Subreddits to monitor
+                  </label>
+                  <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-500">
+                    Where does your target audience hang out? Don&apos;t include &quot;r/&quot;.
+                  </p>
+                  <textarea
+                    value={subreddits}
+                    onChange={(e) => setSubreddits(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-black transition-colors focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                    rows={3}
+                    placeholder={"SaaS\nEntrepreneur\nstartups\nindiehackers"}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={keywordsLoading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl disabled:opacity-50"
+                  >
+                    {keywordsLoading ? (
+                      <>
+                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Keywords'
+                    )}
+                  </button>
+                  
+                  {keywordsMessage === 'success' && (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Saved successfully
+                    </span>
+                  )}
+                  
+                  {keywordsMessage.startsWith('error:') && (
+                    <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                      {keywordsMessage.replace('error:', '')}
+                    </span>
+                  )}
+                </div>
+              </form>
             )}
-          </form>
-        </section>
+          </section>
+
+          {/* Tips Section */}
+          <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-black dark:text-white">
+              <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Tips for better results
+            </h3>
+            <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400"></span>
+                Use specific problem phrases people actually type, not marketing speak
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400"></span>
+                Include common misspellings or variations of competitor names
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400"></span>
+                Start with 3-5 subreddits and expand based on results
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400"></span>
+                &quot;Alternative to X&quot; and &quot;X vs Y&quot; are high-intent keywords
+              </li>
+            </ul>
+          </section>
+        </div>
       </div>
     </main>
   );

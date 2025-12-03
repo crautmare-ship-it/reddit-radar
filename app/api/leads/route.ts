@@ -1,39 +1,18 @@
 /**
  * API Route: Leads
  * 
- * GET /api/leads - Returns Reddit leads (currently mock data)
+ * GET /api/leads - Returns Reddit leads matching configured keywords
  * 
- * NOTE: This is currently a placeholder that generates mock leads based on saved keywords.
- * In a production version, this would:
- * 1. Use the Reddit API (https://www.reddit.com/dev/api) to search for posts
- * 2. Filter results by the configured subreddits
- * 3. Match against problem keywords and competitor names
- * 4. Return real Reddit threads with actual links and metadata
- * 
- * Reddit API Integration would require:
- * - OAuth authentication (client ID, client secret)
- * - Rate limiting handling (60 requests per minute for OAuth)
- * - Using endpoints like: GET /r/{subreddit}/search or GET /search
+ * Uses the Reddit API to search for posts in configured subreddits
+ * that match problem keywords or mention competitors.
  */
 
 import { NextResponse } from 'next/server';
 import { keywordStorage, productStorage } from '@/lib/storage';
-
-// Lead structure matching Reddit's post format
-export interface Lead {
-  id: string;
-  title: string;
-  subreddit: string;
-  url: string;
-  score: number;
-  author: string;
-  created: number;
-  numComments: number;
-}
+import { searchReddit, isRedditConfigured, Lead } from '@/lib/reddit';
 
 /**
- * Generates mock Reddit leads based on configured keywords
- * This simulates what real Reddit API data would look like
+ * Generates mock Reddit leads for demo/testing when Reddit API is not configured
  */
 function generateMockLeads(
   problemKeywords: string[],
@@ -42,32 +21,31 @@ function generateMockLeads(
 ): Lead[] {
   const leads: Lead[] = [];
   
-  // Default subreddits if none configured
   const targetSubreddits = subreddits.length > 0 
     ? subreddits 
     : ['SaaS', 'Entrepreneur', 'indiehackers'];
   
-  // Generate mock leads based on problem keywords
   problemKeywords.slice(0, 3).forEach((keyword, index) => {
     const subreddit = targetSubreddits[index % targetSubreddits.length];
     leads.push({
       id: `mock_${Date.now()}_${index}`,
       title: `Looking for solution: ${keyword}`,
+      body: `I've been trying to find a good solution for ${keyword}. Any recommendations?`,
       subreddit: subreddit,
       url: `https://www.reddit.com/r/${subreddit}/`,
       score: Math.floor(Math.random() * 100) + 50,
       author: `user${Math.floor(Math.random() * 1000)}`,
-      created: Date.now() - Math.floor(Math.random() * 86400000), // Random time in last 24h
+      created: Date.now() - Math.floor(Math.random() * 86400000),
       numComments: Math.floor(Math.random() * 50) + 5,
     });
   });
   
-  // Generate mock leads based on competitor mentions
   competitors.slice(0, 2).forEach((competitor, index) => {
     const subreddit = targetSubreddits[index % targetSubreddits.length];
     leads.push({
       id: `mock_comp_${Date.now()}_${index}`,
       title: `Alternative to ${competitor}?`,
+      body: `I've been using ${competitor} but looking for alternatives. What do you recommend?`,
       subreddit: subreddit,
       url: `https://www.reddit.com/r/${subreddit}/`,
       score: Math.floor(Math.random() * 80) + 40,
@@ -77,12 +55,11 @@ function generateMockLeads(
     });
   });
   
-  // Sort by score (descending)
   return leads.sort((a, b) => b.score - a.score);
 }
 
 /**
- * GET handler - Returns mock leads based on configured keywords
+ * GET handler - Returns leads from Reddit API or mock data
  */
 export async function GET() {
   try {
@@ -99,19 +76,46 @@ export async function GET() {
         message: 'No keywords configured. Please configure your keywords in Settings.',
       });
     }
+
+    // Check if Reddit API is configured
+    const redditConfigured = isRedditConfigured();
     
-    // Generate mock leads based on keywords
-    // TODO: Replace this with actual Reddit API integration
-    const leads = generateMockLeads(
-      keywords.problemKeywords,
-      keywords.competitors,
-      keywords.subreddits
-    );
+    let leads: Lead[];
+    let source: 'reddit' | 'mock';
+
+    if (redditConfigured) {
+      // Use real Reddit API
+      const allKeywords = [
+        ...keywords.problemKeywords,
+        ...keywords.competitors.map(c => `alternative to ${c}`),
+        ...keywords.competitors,
+      ];
+      
+      const subreddits = keywords.subreddits.length > 0 
+        ? keywords.subreddits 
+        : ['SaaS', 'Entrepreneur', 'indiehackers', 'startups'];
+      
+      leads = await searchReddit(subreddits, allKeywords, { 
+        limit: 10, 
+        time: 'week' 
+      });
+      source = 'reddit';
+    } else {
+      // Fall back to mock data
+      leads = generateMockLeads(
+        keywords.problemKeywords,
+        keywords.competitors,
+        keywords.subreddits
+      );
+      source = 'mock';
+    }
     
     return NextResponse.json({
       leads,
       configured: true,
       product: product ? product.name : null,
+      source,
+      redditConfigured,
     });
   } catch (error) {
     console.error('Error fetching leads:', error);
