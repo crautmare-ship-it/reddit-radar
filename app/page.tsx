@@ -3,31 +3,17 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-black dark:to-zinc-950">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-lg dark:border-zinc-800 dark:bg-black/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-red-600">
-              <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              </svg>
-            </div>
-            <span className="text-lg font-bold text-black dark:text-white">Redd Radar</span>
-          </div>
-          <div className="hidden items-center gap-6 md:flex">
+      {/* Secondary Navigation for Landing Page - anchor links only */}
+      <div className="sticky top-16 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur-lg dark:border-zinc-800 dark:bg-black/80">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 py-3">
+          <div className="flex items-center gap-6">
             <a href="#features" className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white">Features</a>
             <a href="#how-it-works" className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white">How it Works</a>
             <a href="#pricing" className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white">Pricing</a>
             <a href="#faq" className="text-sm text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white">FAQ</a>
           </div>
-          <Link
-            href="/dashboard"
-            className="inline-flex h-9 items-center justify-center rounded-full bg-black px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Get Started
-          </Link>
         </div>
-      </nav>
+      </div>
 
       {/* Hero Section */}
       <main className="mx-auto max-w-6xl px-6 py-20">
