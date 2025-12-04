@@ -1,9 +1,9 @@
 /**
  * Reddit API Client for Redd Radar
- * Uses Reddit's OAuth API to search for posts matching keywords
+ * Uses Reddit's public JSON endpoints (no auth required)
+ * Rate limits: ~10 requests per minute (be respectful)
  * 
- * Reddit API Docs: https://www.reddit.com/dev/api
- * Rate limits: 60 requests per minute for OAuth
+ * For higher limits (100 req/min), add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET
  */
 
 // Reddit post structure
@@ -33,14 +33,24 @@ export interface Lead {
   numComments: number;
 }
 
-// Token cache to avoid re-authenticating on every request
+// Token cache for OAuth (optional)
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 /**
- * Get Reddit OAuth access token using client credentials flow
- * This is for "script" type apps (server-side only)
+ * Check if OAuth credentials are configured
  */
-async function getAccessToken(): Promise<string> {
+function hasOAuthCredentials(): boolean {
+  return !!(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET);
+}
+
+/**
+ * Get Reddit OAuth access token (only if credentials are configured)
+ */
+async function getAccessToken(): Promise<string | null> {
+  if (!hasOAuthCredentials()) {
+    return null;
+  }
+
   // Return cached token if still valid (with 60s buffer)
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60000) {
     return cachedToken.token;
@@ -49,53 +59,66 @@ async function getAccessToken(): Promise<string> {
   const clientId = process.env.REDDIT_CLIENT_ID;
   const clientSecret = process.env.REDDIT_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) {
-    throw new Error('Reddit API credentials not configured. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.');
-  }
-
-  // Reddit requires Basic Auth with client credentials
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'RedditRadar/1.0.0',
-    },
-    body: 'grant_type=client_credentials',
-  });
+  try {
+    const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'ReddRadar/1.0.0 (by /u/reddradar)',
+      },
+      body: 'grant_type=client_credentials',
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Reddit auth failed: ${error}`);
+    if (!response.ok) {
+      console.warn('OAuth auth failed, falling back to public API');
+      return null;
+    }
+
+    const data = await response.json();
+    
+    cachedToken = {
+      token: data.access_token,
+      expiresAt: Date.now() + (data.expires_in * 1000),
+    };
+
+    return data.access_token;
+  } catch (error) {
+    console.warn('OAuth error, falling back to public API:', error);
+    return null;
   }
-
-  const data = await response.json();
-  
-  // Cache the token
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in * 1000),
-  };
-
-  return data.access_token;
 }
 
 /**
- * Make an authenticated request to Reddit's OAuth API
+ * Make a request to Reddit (uses OAuth if available, otherwise public JSON)
  */
 async function redditFetch(endpoint: string): Promise<Response> {
   const token = await getAccessToken();
   
-  const response = await fetch(`https://oauth.reddit.com${endpoint}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'User-Agent': 'RedditRadar/1.0.0',
-    },
-  });
-
-  return response;
+  if (token) {
+    // Use OAuth API (100 req/min)
+    return fetch(`https://oauth.reddit.com${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'User-Agent': 'ReddRadar/1.0.0 (by /u/reddradar)',
+      },
+    });
+  } else {
+    // Use public JSON API (no auth, ~10 req/min)
+    // Remove leading slash and add .json
+    const publicUrl = `https://www.reddit.com${endpoint}`;
+    const jsonUrl = publicUrl.includes('?') 
+      ? publicUrl.replace('?', '.json?')
+      : `${publicUrl}.json`;
+    
+    return fetch(jsonUrl, {
+      headers: {
+        'User-Agent': 'ReddRadar/1.0.0 (by /u/reddradar)',
+      },
+    });
+  }
 }
 
 /**
@@ -116,16 +139,21 @@ async function searchSubreddit(
     limit: limit.toString(),
   });
 
-  const response = await redditFetch(`/r/${subreddit}/search?${params}`);
-  
-  if (!response.ok) {
-    console.error(`Failed to search r/${subreddit}:`, response.status);
+  try {
+    const response = await redditFetch(`/r/${subreddit}/search?${params}`);
+    
+    if (!response.ok) {
+      console.error(`Failed to search r/${subreddit}:`, response.status, await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    
+    return (data.data?.children || []).map((child: { data: RedditPost }) => child.data);
+  } catch (error) {
+    console.error(`Error searching r/${subreddit}:`, error);
     return [];
   }
-
-  const data = await response.json();
-  
-  return (data.data?.children || []).map((child: { data: RedditPost }) => child.data);
 }
 
 /**
@@ -155,8 +183,9 @@ export async function searchReddit(
           }
         }
         
-        // Small delay to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Delay to respect rate limits (longer for public API)
+        const delay = hasOAuthCredentials() ? 100 : 500;
+        await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error) {
         console.error(`Error searching r/${subreddit} for "${keyword}":`, error);
       }
@@ -172,7 +201,7 @@ export async function searchReddit(
     url: `https://www.reddit.com${post.permalink}`,
     score: post.score,
     author: post.author,
-    created: post.created_utc * 1000, // Convert to milliseconds
+    created: post.created_utc * 1000,
     numComments: post.num_comments,
   }));
 
@@ -213,13 +242,13 @@ export async function getSubredditPosts(
         }
       }
       
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const delay = hasOAuthCredentials() ? 100 : 500;
+      await new Promise(resolve => setTimeout(resolve, delay));
     } catch (error) {
       console.error(`Error getting r/${subreddit}:`, error);
     }
   }
 
-  // Transform to Lead format
   return allPosts.map(post => ({
     id: post.id,
     title: post.title,
@@ -234,8 +263,8 @@ export async function getSubredditPosts(
 }
 
 /**
- * Check if Reddit API is configured
+ * Check if Reddit API is configured (always returns true now since public API works)
  */
 export function isRedditConfigured(): boolean {
-  return !!(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET);
+  return true; // Public JSON API always works
 }
