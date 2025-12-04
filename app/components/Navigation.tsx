@@ -10,85 +10,75 @@ export default function Navigation() {
   
   const isActive = (path: string) => pathname === path;
   
+  const navLinks = [
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/history', label: 'History' },
+    { href: '/analytics', label: 'Analytics' },
+    { href: '/settings', label: 'Settings' },
+  ];
+  
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-black/80">
-      <nav className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-red-600">
-            <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-black/5 dark:border-white/5">
+      <nav className="mx-auto flex h-[52px] max-w-[980px] items-center justify-between px-6">
+        {/* Logo */}
+        <Link href="/" className="group flex items-center gap-2.5 transition-opacity hover:opacity-80">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-red-600 shadow-sm shadow-orange-500/20 transition-transform group-hover:scale-105">
+            <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd"/>
             </svg>
           </div>
-          <span className="text-lg font-semibold text-black dark:text-white">Redd Radar</span>
+          <span className="text-[15px] font-semibold text-[var(--foreground)]">Redd Radar</span>
         </Link>
         
-        <div className="flex items-center gap-1">
+        {/* Nav Links */}
+        <div className="flex items-center gap-0.5">
           <SignedIn>
-            <Link
-              href="/dashboard"
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive('/dashboard')
-                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/history"
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive('/history')
-                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-              }`}
-            >
-              History
-            </Link>
-            <Link
-              href="/analytics"
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive('/analytics')
-                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-              }`}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="/settings"
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive('/settings')
-                  ? 'bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white'
-                  : 'text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
-              }`}
-            >
-              Settings
-            </Link>
-            <div className="ml-2 flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-700">
+            {/* Navigation pills */}
+            <div className="mr-4 flex items-center rounded-full bg-black/[0.03] p-1 dark:bg-white/[0.05]">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative rounded-full px-4 py-1.5 text-[13px] font-medium transition-all duration-200 ${
+                    isActive(link.href)
+                      ? 'bg-white text-[var(--foreground)] shadow-sm dark:bg-white/10'
+                      : 'text-[#86868b] hover:text-[var(--foreground)]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            
+            {/* Actions */}
+            <div className="flex items-center gap-2 border-l border-black/5 pl-4 dark:border-white/5">
               <ThemeToggle />
               <UserButton 
                 afterSignOutUrl="/"
                 appearance={{
                   elements: {
-                    avatarBox: "h-8 w-8"
+                    avatarBox: "h-7 w-7 rounded-full ring-2 ring-white/50 dark:ring-black/50 transition-all hover:ring-[var(--accent)]"
                   }
                 }}
               />
             </div>
           </SignedIn>
+          
           <SignedOut>
-            <ThemeToggle />
-            <SignInButton mode="modal">
-              <button className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white transition-colors">
-                Sign In
-              </button>
-            </SignInButton>
-            <SignInButton mode="modal">
-              <button className="rounded-full bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:shadow-xl">
-                Get Started
-              </button>
-            </SignInButton>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <SignInButton mode="modal">
+                <button className="text-[13px] font-medium text-[#86868b] transition-colors hover:text-[var(--foreground)]">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignInButton mode="modal">
+                <button className="inline-flex h-8 items-center justify-center rounded-full bg-[var(--foreground)] px-4 text-[13px] font-medium text-[var(--background)] shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98]">
+                  Get Started
+                </button>
+              </SignInButton>
+            </div>
           </SignedOut>
         </div>
       </nav>

@@ -43,3 +43,6 @@ next-env.d.ts
 # User data (JSON storage)
 /data/*.json
 .env*.local
+
+# clerk configuration (can include secrets)
+/.clerk/
