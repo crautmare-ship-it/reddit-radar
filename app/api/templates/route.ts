@@ -22,18 +22,23 @@ export async function GET() {
       );
     }
     
-    const templates = await templateStorage.getAll(userId);
+    const customTemplates = await templateStorage.getAll(userId);
     
-    // If no templates, return default ones
-    if (templates.length === 0) {
-      return NextResponse.json({
-        templates: [
-          { id: 0, name: 'Helpful', tone: 'helpful', instructions: 'Be genuinely helpful and focus on solving the problem.', isDefault: true },
-          { id: 0, name: 'Casual', tone: 'casual', instructions: 'Use a friendly, conversational tone.', isDefault: false },
-          { id: 0, name: 'Professional', tone: 'professional', instructions: 'Maintain a professional, business-like tone.', isDefault: false },
-        ],
-      });
+    // Default templates that are always available
+    const defaultTemplates = [
+      { id: 0, name: 'Helpful', tone: 'helpful', instructions: 'Be genuinely helpful and focus on solving the problem.', isDefault: customTemplates.length === 0, isBuiltIn: true },
+      { id: -1, name: 'Casual', tone: 'casual', instructions: 'Use a friendly, conversational tone.', isDefault: false, isBuiltIn: true },
+      { id: -2, name: 'Professional', tone: 'professional', instructions: 'Maintain a professional, business-like tone.', isDefault: false, isBuiltIn: true },
+    ];
+    
+    // If user has custom templates with a default, unset the built-in default
+    const hasCustomDefault = customTemplates.some(t => t.isDefault);
+    if (hasCustomDefault) {
+      defaultTemplates[0].isDefault = false;
     }
+    
+    // Combine default and custom templates
+    const templates = [...defaultTemplates, ...customTemplates.map(t => ({ ...t, isBuiltIn: false }))];
     
     return NextResponse.json({ templates });
   } catch (error) {

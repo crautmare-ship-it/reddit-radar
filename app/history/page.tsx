@@ -99,9 +99,18 @@ export default function HistoryPage() {
               </svg>
             </div>
             <h2 className="mb-2 text-lg font-semibold text-black dark:text-white">No replies yet</h2>
-            <p className="text-zinc-600 dark:text-zinc-400">
-              Generated replies will appear here for easy reference.
+            <p className="text-zinc-600 dark:text-zinc-400 max-w-md mx-auto">
+              When you generate AI replies from leads on the Dashboard, they&apos;ll be automatically saved here. You can copy, view, or delete your past replies anytime.
             </p>
+            <a
+              href="/dashboard"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-orange-600"
+            >
+              Go to Dashboard
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
           </div>
         )}
 

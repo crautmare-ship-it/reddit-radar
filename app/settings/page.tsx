@@ -314,27 +314,29 @@ export default function Settings() {
                 <div className="flex items-center gap-4 pt-2">
                   <button
                     type="submit"
-                    disabled={productLoading}
-                    className="inline-flex h-10 items-center gap-2 rounded-full bg-blue-500 px-6 text-[13px] font-medium text-white transition-all hover:bg-blue-600 active:scale-[0.98] disabled:opacity-50"
+                    disabled={productLoading || productMessage === 'success'}
+                    className={`inline-flex h-10 items-center gap-2 rounded-full px-6 text-[13px] font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
+                      productMessage === 'success'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
                   >
                     {productLoading ? (
                       <>
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
                         Saving...
                       </>
+                    ) : productMessage === 'success' ? (
+                      <>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved ✓
+                      </>
                     ) : (
                       'Save Product'
                     )}
                   </button>
-                  
-                  {productMessage === 'success' && (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-green-500">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Saved successfully
-                    </span>
-                  )}
                   
                   {productMessage.startsWith('error:') && (
                     <span className="text-[13px] font-medium text-red-500">
@@ -426,27 +428,29 @@ export default function Settings() {
                 <div className="flex items-center gap-4 pt-2">
                   <button
                     type="submit"
-                    disabled={keywordsLoading}
-                    className="inline-flex h-10 items-center gap-2 rounded-full bg-[var(--foreground)] px-6 text-[13px] font-medium text-[var(--background)] transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                    disabled={keywordsLoading || keywordsMessage === 'success'}
+                    className={`inline-flex h-10 items-center gap-2 rounded-full px-6 text-[13px] font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
+                      keywordsMessage === 'success'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
+                    }`}
                   >
                     {keywordsLoading ? (
                       <>
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--background)]/30 border-t-[var(--background)]"></div>
                         Saving...
                       </>
+                    ) : keywordsMessage === 'success' ? (
+                      <>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved ✓
+                      </>
                     ) : (
                       'Save Keywords'
                     )}
                   </button>
-                  
-                  {keywordsMessage === 'success' && (
-                    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-green-500">
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Saved successfully
-                    </span>
-                  )}
                   
                   {keywordsMessage.startsWith('error:') && (
                     <span className="text-[13px] font-medium text-red-500">
