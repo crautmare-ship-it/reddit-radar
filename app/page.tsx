@@ -1,8 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
-import { AuthCTAButton } from "./components/AuthCTA";
+import { AuthCTAButton, PricingCTA } from "./components/AuthCTA";
 
 export default function Home() {
   return (
@@ -259,31 +258,14 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <SignedOut>
-                  <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                    <button
-                      className={`mt-8 flex h-12 w-full items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
-                        plan.featured
-                          ? 'bg-white text-black hover:bg-white/90'
-                          : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
-                      }`}
-                    >
-                      {plan.cta}
-                    </button>
-                  </SignInButton>
-                </SignedOut>
-                <SignedIn>
-                  <Link
-                    href="/dashboard"
-                    className={`mt-8 flex h-12 items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
-                      plan.featured
-                        ? 'bg-white text-black hover:bg-white/90'
-                        : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
-                    }`}
-                  >
-                    Go to Dashboard
-                  </Link>
-                </SignedIn>
+                <PricingCTA
+                  ctaText={plan.cta}
+                  className={`mt-8 flex h-12 w-full items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
+                    plan.featured
+                      ? 'bg-white text-black hover:bg-white/90'
+                      : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
+                  }`}
+                />
               </div>
             ))}
           </div>

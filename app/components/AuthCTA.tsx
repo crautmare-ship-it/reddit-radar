@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 
 interface AuthCTAProps {
   className?: string;
@@ -9,37 +9,86 @@ interface AuthCTAProps {
 }
 
 export function AuthCTAButton({ className, children }: AuthCTAProps) {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Show loading state while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <button className={className} disabled>
+        {children || (
+          <>
+            Loading...
+            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </>
+        )}
+      </button>
+    );
+  }
+
+  // User is signed in - show dashboard link
+  if (isSignedIn) {
+    return (
+      <Link href="/dashboard" className={className}>
+        {children || (
+          <>
+            Go to Dashboard
+            <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </>
+        )}
+      </Link>
+    );
+  }
+
+  // User is NOT signed in - show sign-in button
   return (
-    <>
-      {/* Show sign-in button for logged out users */}
-      <SignedOut>
-        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-          <button className={className}>
-            {children || (
-              <>
-                Start free trial
-                <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </>
-            )}
-          </button>
-        </SignInButton>
-      </SignedOut>
-      
-      {/* Show dashboard link for logged in users */}
-      <SignedIn>
-        <Link href="/dashboard" className={className}>
-          {children || (
-            <>
-              Go to Dashboard
-              <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </>
-          )}
-        </Link>
-      </SignedIn>
-    </>
+    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+      <button className={className}>
+        {children || (
+          <>
+            Start free trial
+            <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </>
+        )}
+      </button>
+    </SignInButton>
+  );
+}
+
+interface PricingCTAProps {
+  className: string;
+  ctaText: string;
+}
+
+export function PricingCTA({ className, ctaText }: PricingCTAProps) {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) {
+    return (
+      <button className={className} disabled>
+        Loading...
+      </button>
+    );
+  }
+
+  if (isSignedIn) {
+    return (
+      <Link href="/dashboard" className={className}>
+        Go to Dashboard
+      </Link>
+    );
+  }
+
+  return (
+    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+      <button className={className}>
+        {ctaText}
+      </button>
+    </SignInButton>
   );
 }
