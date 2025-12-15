@@ -1,4 +1,8 @@
+'use client';
+
 import Link from "next/link";
+import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { AuthCTAButton } from "./components/AuthCTA";
 
 export default function Home() {
   return (
@@ -49,15 +53,7 @@ export default function Home() {
 
           {/* CTA */}
           <div className="animate-fade-in-up animate-delay-300 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="/dashboard"
-              className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[var(--foreground)] px-8 text-[17px] font-normal text-[var(--background)] transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-            >
-              Start free trial
-              <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
+            <AuthCTAButton className="group inline-flex h-[52px] items-center justify-center gap-2 rounded-full bg-[var(--foreground)] px-8 text-[17px] font-normal text-[var(--background)] transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]" />
             <a
               href="#demo"
               className="inline-flex h-[52px] items-center justify-center gap-2 text-[17px] font-normal text-[var(--accent)] transition-colors hover:underline"
@@ -263,16 +259,31 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/dashboard"
-                  className={`mt-8 flex h-12 items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
-                    plan.featured
-                      ? 'bg-white text-black hover:bg-white/90'
-                      : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+                <SignedOut>
+                  <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                    <button
+                      className={`mt-8 flex h-12 w-full items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
+                        plan.featured
+                          ? 'bg-white text-black hover:bg-white/90'
+                          : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
+                      }`}
+                    >
+                      {plan.cta}
+                    </button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <Link
+                    href="/dashboard"
+                    className={`mt-8 flex h-12 items-center justify-center rounded-xl text-[17px] font-medium transition-all ${
+                      plan.featured
+                        ? 'bg-white text-black hover:bg-white/90'
+                        : 'bg-[var(--foreground)] text-[var(--background)] hover:opacity-90'
+                    }`}
+                  >
+                    Go to Dashboard
+                  </Link>
+                </SignedIn>
               </div>
             ))}
           </div>
@@ -324,15 +335,14 @@ export default function Home() {
           <p className="mt-6 text-[21px] text-[#86868b]">
             Join 500+ founders using Redd Radar to grow on Reddit.
           </p>
-          <Link
-            href="/dashboard"
-            className="group mt-10 inline-flex h-[56px] items-center justify-center gap-2 rounded-full bg-[var(--foreground)] px-10 text-[17px] font-medium text-[var(--background)] transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-          >
-            Start your free trial
-            <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
+          <div className="mt-10">
+            <AuthCTAButton className="group inline-flex h-[56px] items-center justify-center gap-2 rounded-full bg-[var(--foreground)] px-10 text-[17px] font-medium text-[var(--background)] transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]">
+              <span>Start your free trial</span>
+              <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </AuthCTAButton>
+          </div>
           <p className="mt-4 text-[13px] text-[#86868b]">No credit card required</p>
         </div>
       </section>
