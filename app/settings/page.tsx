@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from "react";
+import { useAuth, RedirectToSignIn } from "@clerk/nextjs";
 
 interface ReplyTemplate {
   id: number;
@@ -11,6 +12,8 @@ interface ReplyTemplate {
 }
 
 export default function Settings() {
+  const { isSignedIn, isLoaded } = useAuth();
+  
   // Product form state
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
@@ -38,10 +41,28 @@ export default function Settings() {
   const [newTemplateInstructions, setNewTemplateInstructions] = useState('');
 
   useEffect(() => {
-    loadProductSettings();
-    loadKeywordSettings();
-    loadTemplates();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      loadProductSettings();
+      loadKeywordSettings();
+      loadTemplates();
+    }
+  }, [isLoaded, isSignedIn]);
+
+  // Auth check
+  if (!isLoaded) {
+    return (
+      <main className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-[#86868b]">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <RedirectToSignIn />;
+  }
 
   const loadProductSettings = async () => {
     try {

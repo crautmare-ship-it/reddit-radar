@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { useAuth, RedirectToSignIn } from "@clerk/nextjs";
 
 interface ReplyHistory {
   id: number;
@@ -26,14 +27,33 @@ function timeAgo(dateString: string): string {
 }
 
 export default function HistoryPage() {
+  const { isSignedIn, isLoaded } = useAuth();
   const [history, setHistory] = useState<ReplyHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      loadHistory();
+    }
+  }, [isLoaded, isSignedIn]);
+
+  // Auth check
+  if (!isLoaded) {
+    return (
+      <main className="min-h-screen bg-zinc-50 dark:bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <RedirectToSignIn />;
+  }
 
   const loadHistory = async () => {
     setLoading(true);

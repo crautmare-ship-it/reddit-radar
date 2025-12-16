@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useAuth, RedirectToSignIn } from "@clerk/nextjs";
 
 interface Lead {
   id: string;
@@ -53,6 +54,7 @@ function parseRedditUrl(url: string): { subreddit: string; postId: string } | nu
 }
 
 export default function Dashboard() {
+  const { isSignedIn, isLoaded } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [configured, setConfigured] = useState(true);
@@ -74,8 +76,26 @@ export default function Dashboard() {
   const [importError, setImportError] = useState('');
 
   useEffect(() => {
-    loadLeads();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      loadLeads();
+    }
+  }, [isLoaded, isSignedIn]);
+
+  // Redirect to sign-in if not authenticated
+  if (!isLoaded) {
+    return (
+      <main className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-[#86868b]">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <RedirectToSignIn />;
+  }
 
   const loadLeads = async () => {
     setLoading(true);

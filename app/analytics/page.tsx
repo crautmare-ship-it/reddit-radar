@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { useAuth, RedirectToSignIn } from "@clerk/nextjs";
 
 interface UsageStats {
   currentMonth: {
@@ -17,12 +18,31 @@ interface UsageStats {
 }
 
 export default function AnalyticsPage() {
+  const { isSignedIn, isLoaded } = useAuth();
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUsage();
-  }, []);
+    if (isLoaded && isSignedIn) {
+      loadUsage();
+    }
+  }, [isLoaded, isSignedIn]);
+
+  // Auth check
+  if (!isLoaded) {
+    return (
+      <main className="min-h-screen bg-zinc-50 dark:bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-zinc-600 dark:text-zinc-400">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <RedirectToSignIn />;
+  }
 
   const loadUsage = async () => {
     setLoading(true);
