@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useAuth, SignInButton } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 
 interface AuthCTAProps {
   className?: string;
@@ -10,6 +10,14 @@ interface AuthCTAProps {
 
 export function AuthCTAButton({ className, children }: AuthCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
+  const { openSignIn } = useClerk();
+
+  const handleClick = () => {
+    openSignIn({
+      afterSignInUrl: '/dashboard',
+      afterSignUpUrl: '/dashboard',
+    });
+  };
 
   // Show loading state while Clerk is initializing
   if (!isLoaded) {
@@ -43,20 +51,18 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
     );
   }
 
-  // User is NOT signed in - show sign-in button
+  // User is NOT signed in - show sign-in button (pure button, no anchor)
   return (
-    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-      <button className={className}>
-        {children || (
-          <>
-            Start free trial
-            <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </>
-        )}
-      </button>
-    </SignInButton>
+    <button onClick={handleClick} className={className}>
+      {children || (
+        <>
+          Start free trial
+          <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </>
+      )}
+    </button>
   );
 }
 
@@ -67,6 +73,14 @@ interface PricingCTAProps {
 
 export function PricingCTA({ className, ctaText }: PricingCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
+  const { openSignIn } = useClerk();
+
+  const handleClick = () => {
+    openSignIn({
+      afterSignInUrl: '/dashboard',
+      afterSignUpUrl: '/dashboard',
+    });
+  };
 
   if (!isLoaded) {
     return (
@@ -85,10 +99,8 @@ export function PricingCTA({ className, ctaText }: PricingCTAProps) {
   }
 
   return (
-    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-      <button className={className}>
-        {ctaText}
-      </button>
-    </SignInButton>
+    <button onClick={handleClick} className={className}>
+      {ctaText}
+    </button>
   );
 }
