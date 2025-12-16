@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useAuth, useClerk } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 
 interface AuthCTAProps {
   className?: string;
@@ -10,35 +10,9 @@ interface AuthCTAProps {
 
 export function AuthCTAButton({ className, children }: AuthCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
-  const { openSignIn } = useClerk();
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openSignIn({
-      afterSignInUrl: '/dashboard',
-      afterSignUpUrl: '/dashboard',
-    });
-  };
-
-  // Show loading state while Clerk is initializing
-  if (!isLoaded) {
-    return (
-      <button type="button" className={className} disabled>
-        {children || (
-          <>
-            Loading...
-            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          </>
-        )}
-      </button>
-    );
-  }
-
-  // User is signed in - show dashboard link
-  if (isSignedIn) {
+  // If user is definitely signed in, show dashboard link
+  if (isLoaded && isSignedIn) {
     return (
       <Link href="/dashboard" className={className}>
         {children || (
@@ -53,9 +27,10 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
     );
   }
 
-  // User is NOT signed in - show sign-in button (pure button, no anchor)
+  // Default: Always show sign-in link (even during loading)
+  // This ensures the button ALWAYS works, even if JS fails
   return (
-    <button type="button" onClick={handleClick} className={className}>
+    <Link href="/sign-in" className={className}>
       {children || (
         <>
           Start free trial
@@ -64,7 +39,7 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
           </svg>
         </>
       )}
-    </button>
+    </Link>
   );
 }
 
@@ -75,26 +50,9 @@ interface PricingCTAProps {
 
 export function PricingCTA({ className, ctaText }: PricingCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
-  const { openSignIn } = useClerk();
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openSignIn({
-      afterSignInUrl: '/dashboard',
-      afterSignUpUrl: '/dashboard',
-    });
-  };
-
-  if (!isLoaded) {
-    return (
-      <button type="button" className={className} disabled>
-        Loading...
-      </button>
-    );
-  }
-
-  if (isSignedIn) {
+  // If user is definitely signed in, show dashboard link
+  if (isLoaded && isSignedIn) {
     return (
       <Link href="/dashboard" className={className}>
         Go to Dashboard
@@ -102,9 +60,10 @@ export function PricingCTA({ className, ctaText }: PricingCTAProps) {
     );
   }
 
+  // Default: Always show sign-in link (even during loading)
   return (
-    <button type="button" onClick={handleClick} className={className}>
+    <Link href="/sign-in" className={className}>
       {ctaText}
-    </button>
+    </Link>
   );
 }
