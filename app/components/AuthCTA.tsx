@@ -12,7 +12,9 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
   const { openSignIn } = useClerk();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     openSignIn({
       afterSignInUrl: '/dashboard',
       afterSignUpUrl: '/dashboard',
@@ -22,7 +24,7 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
   // Show loading state while Clerk is initializing
   if (!isLoaded) {
     return (
-      <button className={className} disabled>
+      <button type="button" className={className} disabled>
         {children || (
           <>
             Loading...
@@ -53,7 +55,7 @@ export function AuthCTAButton({ className, children }: AuthCTAProps) {
 
   // User is NOT signed in - show sign-in button (pure button, no anchor)
   return (
-    <button onClick={handleClick} className={className}>
+    <button type="button" onClick={handleClick} className={className}>
       {children || (
         <>
           Start free trial
@@ -75,7 +77,9 @@ export function PricingCTA({ className, ctaText }: PricingCTAProps) {
   const { isSignedIn, isLoaded } = useAuth();
   const { openSignIn } = useClerk();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     openSignIn({
       afterSignInUrl: '/dashboard',
       afterSignUpUrl: '/dashboard',
@@ -84,7 +88,7 @@ export function PricingCTA({ className, ctaText }: PricingCTAProps) {
 
   if (!isLoaded) {
     return (
-      <button className={className} disabled>
+      <button type="button" className={className} disabled>
         Loading...
       </button>
     );
@@ -99,7 +103,7 @@ export function PricingCTA({ className, ctaText }: PricingCTAProps) {
   }
 
   return (
-    <button onClick={handleClick} className={className}>
+    <button type="button" onClick={handleClick} className={className}>
       {ctaText}
     </button>
   );
